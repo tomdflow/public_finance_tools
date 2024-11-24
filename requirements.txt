@@ -4,4 +4,3 @@ yfinance
 pprint
 scipy
 plotly
-yfinance
