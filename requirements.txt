@@ -3,5 +3,5 @@ pandas
 yfinance
 pprint
 scipy
-plotly.express
+plotly
 yfinance
