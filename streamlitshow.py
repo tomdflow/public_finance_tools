@@ -1,14 +1,6 @@
-from pprint import pprint
-
 # Secondary packages
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
-
-# Plotting packages
-import plotly.express as px
-import plotly.graph_objects as go
-import plotly.subplots as sp
 
 # Data packages
 import yfinance as yf
