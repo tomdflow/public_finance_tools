@@ -28,6 +28,7 @@ with col2:
 data = yf.download(asset, start_time)#['Close'] , interval='1h'
 #data.columns = data.columns.str.lower()
 ft = Finance_Tools(data, asset)
+ft = Finance_Tools(data, asset)
 
 
 st.header(asset)
@@ -44,14 +45,18 @@ col3, col4 = st.columns(2)
 with col3:
    st.write('Returns artihmetic')
    st.plotly_chart(ft.returns(return_pd=False).ret_hist(show=False))
+   st.plotly_chart(ft.returns(return_pd=False).ret_hist(show=False))
 
    st.write('Returns log')
+   st.plotly_chart(ft.log_returns(return_pd=False).ret_hist(show=False))
    st.plotly_chart(ft.log_returns(return_pd=False).ret_hist(show=False))
 
    st.write('Intraday Returns')
    st.plotly_chart(ft.intraday_returns(return_pd=False).ret_hist(show=False))
+   st.plotly_chart(ft.intraday_returns(return_pd=False).ret_hist(show=False))
 
    st.write('Overnight Returns')
+   st.plotly_chart(ft.overnight_returns(return_pd=False).ret_hist(show=False))
    st.plotly_chart(ft.overnight_returns(return_pd=False).ret_hist(show=False))
 
 with col4:
@@ -67,6 +72,7 @@ with col4:
    st.write(ft.weekday_returns())
 
    st.write('High low range')
+   st.plotly_chart(ft.high_low_range().plot())
    st.plotly_chart(ft.high_low_range().plot())
 
    st.write('Returns significance')
