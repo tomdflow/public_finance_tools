@@ -554,7 +554,9 @@ Value counts per year
         """
         Test all kinds of returns for significance.
         
-        This method tests the statistical significance of different types of returns, including intraday returns, overnight returns, and weekend returns. It prints the results of the normality tests for each type of return.
+        This method tests the statistical significance of different types of returns, 
+        including intraday returns, overnight returns, and weekend returns. 
+        It prints the results of the normality tests for each type of return.
         
         Todo:
         - Adjust the method to work with all kinds of data frequencies?
@@ -562,13 +564,15 @@ Value counts per year
         """
 
         print("Intraday returns")
-        intra_sig,  = self.returns(return_pd=False).ret_normal_test(self.intraday_returns())
+        intra_sig, _ = self.returns(return_pd=False).ret_normal_test(self.intraday_returns())
 
         print("Overnight returns")
-        self.returns(return_pd=False).ret_normal_test(self.overnight_returns())
+        overnight_sig, _ = self.returns(return_pd=False).ret_normal_test(self.overnight_returns())
 
         print("Weekend returns")
-        self.returns(return_pd=False).ret_normal_test(self.simple_weekend_returns())
+        weekend_sig, _ = self.returns(return_pd=False).ret_normal_test(self.simple_weekend_returns())
+
+        return intra_sig, overnight_sig, weekend_sig
 
     # Returns
     def weekday_returns(self, hist_comp=False, alpha=0.05):
@@ -939,14 +943,14 @@ Value counts per year
         df['60MA'] = df['close'].rolling(60).mean()
 
         # Create a subplot with two rows, one for the candlestick and one for the volume bar chart
-        if 'volume' in df.columns:
+        if 'volume' in df.columns and show_vol:
             # Convert volume to money units if its of type integer
             if pd.api.types.is_integer_dtype(df['volume']):
                 df['volume'] = df['volume'] * df['close']
 
             fig = sp.make_subplots(rows=2, cols=1, shared_xaxes=True,
                                 vertical_spacing=0.02,
-                                row_heights=[0.7, 0.3],  # Adjust the relative height of the plots
+                                row_heights=[0.9, 0.1],  # Adjust the relative height of the plots
                                 #subplot_titles=('OHLC Candlestick Chart', 'Volume')
                                 )
         else:
@@ -997,7 +1001,8 @@ Value counts per year
             #yaxis_title='Price',
             #yaxis2_title='Volume' if 'volume' in df.columns else None,
             xaxis_rangeslider_visible=False,  # To hide the range slider under the chart, set to True to display it
-            showlegend=False  # You can enable this if you prefer having a legend
+            showlegend=False,  # You can enable this if you prefer having a legend
+            height = 500
         )
 
         # Update x-axis properties to be shared across the subplots
@@ -1217,5 +1222,3 @@ Value counts per year
             fig.show()
         
         return both
-
-
