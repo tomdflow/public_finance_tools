@@ -730,6 +730,20 @@ Value counts per year
             line=dict(color='green', width=1, dash='dash')
         ))
 
+        # Add the means written on the chart 
+        fig.add_annotation(
+            x=0,  # Left edge of the plot
+            y=1,  # Top of the plot
+            xref='paper',
+            yref='paper',
+            xanchor='left',
+            yanchor='top',
+            text=f"{self.name} Mean: {ret_mean:.4f}",
+            showarrow=False,
+            font=dict(color='red')
+        )
+
+
         if show:
             fig.show()
 
@@ -738,57 +752,187 @@ Value counts per year
     # Graphing
     def ret_hist_benchmark(self, show=True, bin_size=0.001, benchmark='^SPX'):
         """
-        Graphs the return distribution of the current object and a benchmark.
-        
-        Expects returns as financetools objects.
-        
+        Graphs the return distribution of the current object and a benchmark,
+        including mean and standard deviation lines, as well as normal distribution curves.
+
+        Expects returns as Finance_Tools objects.
+
         Args:
             show (bool): Whether to display the plot. Default is True.
             bin_size (float): The size of the histogram bins. Default is 0.001.
             benchmark (str): The ticker symbol of the benchmark to compare against. Default is '^SPX'.
-        
+
         Returns:
             plotly.graph_objects.Figure: The generated plot.
 
-            
-        Expects returns as financetools
+        Example:
+            finance_tool.ret_hist_benchmark(show=True, bin_size=0.001, benchmark='^SPX')
         """
-        #ret = self.returns()
+
+        # Get the returns for the current object and the benchmark
         ret = self.data['close']
+        bench_data = yf.download(benchmark, self.start_date)['Close']
+        bench = Finance_Tools(bench_data).returns(return_pd=True)
 
-        bench = Finance_Tools(yf.download(benchmark, self.start_date)['Close']).returns()
+        # Compute mean and standard deviation for both datasets
+        ret_mean = ret.mean()
+        ret_std = ret.std()
+        bench_mean = bench.mean()
+        bench_std = bench.std()
 
+        # Create the histogram figure
         fig = go.Figure()
 
-        # Add both histograms to the figure
-        fig.add_trace(go.Histogram(x=bench, 
-                                   name=benchmark, 
-                                   opacity=0.5, 
-                                   xbins=dict(size=bin_size)
-                                   #nbins=self._help_get_bins(bench, bin_size=bin_size)
-                                   ))
-        
-        fig.add_trace(go.Histogram(x=ret, 
-                                   name=self.name,
-                                   opacity=0.5,
-                                   xbins=dict(size=bin_size)
-                                   #nbins=self._help_get_bins(ret, bin_size=bin_size)
-                                   ))
+        # Add histogram for the benchmark
+        fig.add_trace(go.Histogram(
+            x=bench,
+            name=benchmark,
+            opacity=0.5,
+            xbins=dict(size=bin_size)
+        ))
 
-        # Combine the histograms into one figure
-        fig.update_layout(
-            barmode='overlay',  # 'overlay' will stack them transparently; 'group' will place them side by side
-            title='Comparison of return distributions',
-            xaxis_title='Return',
-            yaxis_title='Occurence'
+        # Add histogram for the current object's returns
+        fig.add_trace(go.Histogram(
+            x=ret,
+            name=self.name,
+            opacity=0.5,
+            xbins=dict(size=bin_size)
+        ))
+
+        # Manually compute the histograms to get y_max for plotting vertical lines
+        combined_min = min(ret.min(), bench.min())
+        combined_max = max(ret.max(), bench.max())
+        bins = np.arange(combined_min, combined_max + bin_size, bin_size)
+        counts_ret, _ = np.histogram(ret, bins=bins)
+        counts_bench, _ = np.histogram(bench, bins=bins)
+        y_max = max(max(counts_ret), max(counts_bench))
+
+        # Add vertical lines for mean and std deviation of the current object's returns
+        fig.add_trace(go.Scatter(
+            x=[ret_mean, ret_mean],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{self.name} Mean',
+            line=dict(color='red', width=2)
+        ))
+        fig.add_trace(go.Scatter(
+            x=[ret_mean - ret_std, ret_mean - ret_std],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{self.name} Mean - 1 Std Dev',
+            line=dict(color='red', width=1, dash='dot')
+        ))
+        fig.add_trace(go.Scatter(
+            x=[ret_mean + ret_std, ret_mean + ret_std],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{self.name} Mean + 1 Std Dev',
+            line=dict(color='red', width=1, dash='dot')
+        ))
+
+        # Add vertical lines for mean and std deviation of the benchmark
+        fig.add_trace(go.Scatter(
+            x=[bench_mean, bench_mean],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{benchmark} Mean',
+            line=dict(color='blue', width=2)
+        ))
+        fig.add_trace(go.Scatter(
+            x=[bench_mean - bench_std, bench_mean - bench_std],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{benchmark} Mean - 1 Std Dev',
+            line=dict(color='blue', width=1, dash='dot')
+        ))
+        fig.add_trace(go.Scatter(
+            x=[bench_mean + bench_std, bench_mean + bench_std],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{benchmark} Mean + 1 Std Dev',
+            line=dict(color='blue', width=1, dash='dot')
+        ))
+
+        # Add normal distribution curves for the current object's returns
+        x_values_ret = np.linspace(combined_min, combined_max, 500)
+        y_values_ret = (
+            (1 / (ret_std * np.sqrt(2 * np.pi))) *
+            np.exp(-0.5 * ((x_values_ret - ret_mean) / ret_std) ** 2)
+        )
+        y_values_ret *= len(ret) * bin_size  # Scale to histogram
+        fig.add_trace(go.Scatter(
+            x=x_values_ret,
+            y=y_values_ret,
+            mode='lines',
+            name=f'{self.name} Normal Distribution',
+            line=dict(color='red', width=1, dash='dash')
+        ))
+
+        # Add normal distribution curves for the benchmark
+        x_values_bench = np.linspace(combined_min, combined_max, 500)
+        y_values_bench = (
+            (1 / (bench_std * np.sqrt(2 * np.pi))) *
+            np.exp(-0.5 * ((x_values_bench - bench_mean) / bench_std) ** 2)
+        )
+        y_values_bench *= len(bench) * bin_size  # Scale to histogram
+        fig.add_trace(go.Scatter(
+            x=x_values_bench,
+            y=y_values_bench,
+            mode='lines',
+            name=f'{benchmark} Normal Distribution',
+            line=dict(color='blue', width=1, dash='dash')
+        ))
+
+        # Add the means written on the chart 
+        fig.add_annotation(
+            x=0,  # Left edge of the plot
+            y=1,  # Top of the plot
+            xref='paper',
+            yref='paper',
+            xanchor='left',
+            yanchor='top',
+            text=f"{self.name} Mean: {ret_mean:.4f}",
+            showarrow=False,
+            font=dict(color='red')
         )
 
+        # Annotation for the benchmark's mean
+        fig.add_annotation(
+            x=0,  # Left edge of the plot
+            y=0.95,  # Slightly below the first annotation
+            xref='paper',
+            yref='paper',
+            xanchor='left',
+            yanchor='top',
+            text=f"{benchmark} Mean: {bench_mean:.4f}",
+            showarrow=False,
+            font=dict(color='blue')
+        )
+
+
+
+        # Update the layout of the figure
+        fig.update_layout(
+            barmode='overlay',  # Overlay histograms
+            title='Comparison of Return Distributions',
+            xaxis_title='Return',
+            yaxis_title='Occurrence',
+            legend=dict(
+                x=1.05,
+                y=1,
+                bgcolor='rgba(255,255,255,0)',
+                bordercolor='rgba(255,255,255,0)'
+            )
+        )
+
+        # Show the figure
         if show:
             fig.show()
 
         return fig
 
-    # Graphing
+
+    # Graphing essentially the same as benchmark comparison but with any return series
     def ret_hist_comparison(self, other_return, show=True, bin_size=0.001):
         """
         Graphs the data series as histogram with another histogram of returns from the input.
@@ -811,106 +955,164 @@ Value counts per year
         lol.returns(return_pd=False).ret_hist_comparison(gog.returns(), show=False)
 
         """
-        fig = go.Figure() # initialize the figure
-
+        # Get the returns for the current object and the benchmark
         ret = self.data['close']
+        #bench_data = yf.download(benchmark, self.start_date)['Close']
+        bench = Finance_Tools(other_return).returns(return_pd=True)
+        benchmark = other_return.name
 
-        # Figure out hist max value to use as upper end of vertical lines
-        # Manually compute the histogram to get y_max
-        ret_counts, _ = np.histogram(ret, bins=np.arange(ret.min(), ret.max(), bin_size))
-        other_counts, _ = np.histogram(other_return, bins=np.arange(other_return.min(), other_return.max(), bin_size))
-        y_max = max(max(ret_counts), max(other_counts))
-
-
-        # Add self returns
-        #ret = self.returns()
+        # Compute mean and standard deviation for both datasets
         ret_mean = ret.mean()
         ret_std = ret.std()
+        bench_mean = bench.mean()
+        bench_std = bench.std()
 
-        # Add both histograms to the figure
-        fig.add_trace(go.Histogram(x=ret, 
-                                   name=self.name,
-                                   opacity=0.5,
-                                   xbins=dict(size=bin_size)
-                                   ))
-        
-        # Add vertical line for mean
-        fig.add_trace(go.Scatter(x=[ret_mean, ret_mean],
-                                y=[0, y_max],
-                                mode='lines',
-                                name=f'Mean {self.name}',
-                                line=dict(color='red', width=2)))
-        # Add vertical lines for mean ± std deviation
+        # Create the histogram figure
+        fig = go.Figure()
+
+        # Add histogram for the benchmark
+        fig.add_trace(go.Histogram(
+            x=bench,
+            name=benchmark,
+            opacity=0.5,
+            xbins=dict(size=bin_size)
+        ))
+
+        # Add histogram for the current object's returns
+        fig.add_trace(go.Histogram(
+            x=ret,
+            name=self.name,
+            opacity=0.5,
+            xbins=dict(size=bin_size)
+        ))
+
+        # Manually compute the histograms to get y_max for plotting vertical lines
+        combined_min = min(ret.min(), bench.min())
+        combined_max = max(ret.max(), bench.max())
+        bins = np.arange(combined_min, combined_max + bin_size, bin_size)
+        counts_ret, _ = np.histogram(ret, bins=bins)
+        counts_bench, _ = np.histogram(bench, bins=bins)
+        y_max = max(max(counts_ret), max(counts_bench))
+
+        # Add vertical lines for mean and std deviation of the current object's returns
+        fig.add_trace(go.Scatter(
+            x=[ret_mean, ret_mean],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{self.name} Mean',
+            line=dict(color='red', width=2)
+        ))
         fig.add_trace(go.Scatter(
             x=[ret_mean - ret_std, ret_mean - ret_std],
             y=[0, y_max],
             mode='lines',
-            name='{self.name} - 1 Std Dev',
-            line=dict(color='blue', width=1, dash='dot')
+            name=f'{self.name} Mean - 1 Std Dev',
+            line=dict(color='red', width=1, dash='dot')
         ))
         fig.add_trace(go.Scatter(
             x=[ret_mean + ret_std, ret_mean + ret_std],
             y=[0, y_max],
             mode='lines',
-            name='{self.name} + 1 Std Dev',
-            line=dict(color='blue', width=1, dash='dot')
+            name=f'{self.name} Mean + 1 Std Dev',
+            line=dict(color='red', width=1, dash='dot')
         ))
 
-        
-
-        # Add other returns
-        other_mean = other_return.mean()
-        other_std = other_return.std()
-        
-        fig.add_trace(go.Histogram(x=other_return, 
-                                   name=other_return.name, 
-                                   opacity=0.5, 
-                                   xbins=dict(size=bin_size)
-                                   ))
-        # Add vertical line for mean
-        fig.add_trace(go.Scatter(x=[other_mean, other_mean],
-                                y=[0, y_max],
-                                mode='lines',
-                                name='Mean {other_return.name}',
-                                line=dict(color='red', width=2)))
-        # Add vertical lines for mean ± std deviation
+        # Add vertical lines for mean and std deviation of the benchmark
         fig.add_trace(go.Scatter(
-            x=[other_mean - other_std, other_mean - other_std],
+            x=[bench_mean, bench_mean],
             y=[0, y_max],
             mode='lines',
-            name='{other_return.name} - 1 Std Dev',
-            line=dict(color='blue', width=1, dash='dot')
+            name=f'{benchmark} Mean',
+            line=dict(color='blue', width=2)
         ))
         fig.add_trace(go.Scatter(
-            x=[other_mean + other_std, other_mean + other_std],
+            x=[bench_mean - bench_std, bench_mean - bench_std],
             y=[0, y_max],
             mode='lines',
-            name='{other_return.name} + 1 Std Dev',
+            name=f'{benchmark} Mean - 1 Std Dev',
+            line=dict(color='blue', width=1, dash='dot')
+        ))
+        fig.add_trace(go.Scatter(
+            x=[bench_mean + bench_std, bench_mean + bench_std],
+            y=[0, y_max],
+            mode='lines',
+            name=f'{benchmark} Mean + 1 Std Dev',
             line=dict(color='blue', width=1, dash='dot')
         ))
 
-
-        # Add a normal distribution to the background
-        x_values = np.linspace(min(ret.min(), other_return.min()), max(ret.max(), other_return.max()), 500)
-        y_values = (1 / (ret_std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x_values - ret_mean) / ret_std) ** 2)
-        y_values = y_values * len(ret) * bin_size  # Scale to histogram
+        # Add normal distribution curves for the current object's returns
+        x_values_ret = np.linspace(combined_min, combined_max, 500)
+        y_values_ret = (
+            (1 / (ret_std * np.sqrt(2 * np.pi))) *
+            np.exp(-0.5 * ((x_values_ret - ret_mean) / ret_std) ** 2)
+        )
+        y_values_ret *= len(ret) * bin_size  # Scale to histogram
         fig.add_trace(go.Scatter(
-            x=x_values,
-            y=y_values,
+            x=x_values_ret,
+            y=y_values_ret,
             mode='lines',
-            name='Normal Distribution',
-            line=dict(color='green', width=2, dash='dash')
+            name=f'{self.name} Normal Distribution',
+            line=dict(color='red', width=1, dash='dash')
         ))
 
+        # Add normal distribution curves for the benchmark
+        x_values_bench = np.linspace(combined_min, combined_max, 500)
+        y_values_bench = (
+            (1 / (bench_std * np.sqrt(2 * np.pi))) *
+            np.exp(-0.5 * ((x_values_bench - bench_mean) / bench_std) ** 2)
+        )
+        y_values_bench *= len(bench) * bin_size  # Scale to histogram
+        fig.add_trace(go.Scatter(
+            x=x_values_bench,
+            y=y_values_bench,
+            mode='lines',
+            name=f'{benchmark} Normal Distribution',
+            line=dict(color='blue', width=1, dash='dash')
+        ))
 
-        # Combine the histograms into one figure
-        fig.update_layout(
-            barmode='overlay',  # 'overlay' will stack them transparently; 'group' will place them side by side
-            title='Comparison of return distributions',
-            xaxis_title='Return',
-            yaxis_title='Occurence'
+        # Add the means written on the chart 
+        fig.add_annotation(
+            x=0,  # Left edge of the plot
+            y=1,  # Top of the plot
+            xref='paper',
+            yref='paper',
+            xanchor='left',
+            yanchor='top',
+            text=f"{self.name} Mean: {ret_mean:.4f}",
+            showarrow=False,
+            font=dict(color='red')
         )
 
+        # Annotation for the benchmark's mean
+        fig.add_annotation(
+            x=0,  # Left edge of the plot
+            y=0.95,  # Slightly below the first annotation
+            xref='paper',
+            yref='paper',
+            xanchor='left',
+            yanchor='top',
+            text=f"{benchmark} Mean: {bench_mean:.4f}",
+            showarrow=False,
+            font=dict(color='blue')
+        )
+
+
+
+        # Update the layout of the figure
+        fig.update_layout(
+            barmode='overlay',  # Overlay histograms
+            title='Comparison of Return Distributions',
+            xaxis_title='Return',
+            yaxis_title='Occurrence',
+            legend=dict(
+                x=1.05,
+                y=1,
+                bgcolor='rgba(255,255,255,0)',
+                bordercolor='rgba(255,255,255,0)'
+            )
+        )
+
+        # Show the figure
         if show:
             fig.show()
 
