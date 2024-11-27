@@ -47,31 +47,38 @@ with col3:
    st.write('Returns log')
    st.plotly_chart(ft.log_returns(return_pd=False).ret_hist(show=False))
 
-   st.write('Intraday Returns')
+
+   intraday_ret_sig, overnight_ret_sig, weekend_ret_sig = ft.test_all_returns()
+
+   st.write(f'Intraday Returns: significant={intraday_ret_sig}')
    st.plotly_chart(ft.intraday_returns(return_pd=False).ret_hist(show=False))
 
-   st.write('Overnight Returns')
+   st.write(f'Overnight Returns: significant={overnight_ret_sig}')
    st.plotly_chart(ft.overnight_returns(return_pd=False).ret_hist(show=False))
 
-with col4:
-   st.write('Comparison of return distribution with benchmark')
-   st.plotly_chart(ft.returns(return_pd=False).ret_hist_benchmark(show=False, benchmark='^SPX'))
-
-   st.write('Weekend Returns')
-   #st.plotly_chart(lol.weekend_return()['weekend_return'].plot(kind='hist'))
-   st.plotly_chart(ft.simple_weekend_returns().plot(kind='hist'))
+   st.write(f'Weekend Returns: significant={weekend_ret_sig}')
+   st.plotly_chart(ft.simple_weekend_returns(return_pd=False).ret_hist(show=False))
 
    st.write('Significance of different weekday returns vs the overall returns')
    st.write(ft.weekday_returns())
 
-   #st.write("Performance Comparison to other ticker")
-   #comp_asset = st.text_input(label="Stock", value='MSFT') # get the ticker from input
-   #bench_data = yf.download(comp_asset, start_time)['Close']
-   #ft.cumulative_comparison(bench_data, other_name=comp_asset).plot()
-
    st.write('High low range')
    st.plotly_chart(ft.high_low_range().plot())
 
-   st.write('Returns significance')
-   #st.write(lol.test_all_returns())
+with col4:
+   st.write('Comparison of return distribution with benchmark')
+   st.plotly_chart(ft.ret_hist_benchmark(show=False, benchmark='^SPX'))
+
+   st.write("Performance Comparison to other ticker")
+   comp_asset = st.text_input(label="Stock", value='MSFT') # get the ticker from input
+   bench_data = yf.download(comp_asset, start_time)['Close'] # download ticker data
+   st.plotly_chart(ft.returns(return_pd=False).ret_hist_comparison(bench_data, other_name=comp_asset, show=False)) # add histogram comparison
+   st.plotly_chart(ft.cumulative_comparison(bench_data, other_name=comp_asset).plot()) # cumulative performance comparison chart
+
+   # Historic correl chart
+   st.write("Rolling 252-day correlation")
+   st.plotly_chart(ft.correlation(bench_data).plot())
+
+
+
 

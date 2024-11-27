@@ -543,6 +543,7 @@ Value counts per year
             raise ValueError("Frequency is higher than weekly, input lower frequent data")
 
         ret = ((data['open'] - data['close'].shift(1)) / data['close'].shift(1)).shift(-1)
+        ret.name = 'close'
 
         if return_pd:
             return ret.dropna()
@@ -563,13 +564,13 @@ Value counts per year
 
         """
 
-        print("Intraday returns")
+        #print("Intraday returns")
         intra_sig, _ = self.returns(return_pd=False).ret_normal_test(self.intraday_returns())
 
-        print("Overnight returns")
+        #print("Overnight returns")
         overnight_sig, _ = self.returns(return_pd=False).ret_normal_test(self.overnight_returns())
 
-        print("Weekend returns")
+        #print("Weekend returns")
         weekend_sig, _ = self.returns(return_pd=False).ret_normal_test(self.simple_weekend_returns())
 
         return intra_sig, overnight_sig, weekend_sig
@@ -713,7 +714,7 @@ Value counts per year
         # Combine the histograms into one figure
         fig.update_layout(
             barmode='overlay',  # 'overlay' will stack them transparently; 'group' will place them side by side
-            title='Return distribution',
+            #title='Return distribution',
             xaxis_title='Return',
             yaxis_title='Occurence'
         )
@@ -743,21 +744,20 @@ Value counts per year
             font=dict(color='red')
         )
 
-
         if show:
             fig.show()
 
         return fig
 
     # Graphing
-    def ret_hist_comparison(self, other_returns, other_name, show=True, bin_size=0.001):
+    def ret_hist_comparison(self, comp_price_series, other_name, show=True, bin_size=0.001):
         """
         Graphs the data series as histogram with another histogram of returns from the input.
         
         Expects returns as financetools objects.
         
         Args:
-            other_return (pandas.Series): The return series to compare against.
+            other_return (pandas.Series): The price series to compare against.
             show (bool): Whether to display the plot. Default is True.
             bin_size (float): The size of the histogram bins. Default is 0.001.
         
@@ -769,13 +769,13 @@ Value counts per year
         Maybe separate the go.histogram creation into its own function?
 
         Example: 
-        lol.returns(return_pd=False).ret_hist_comparison(gog.returns(), show=False)
+        lol.returns(return_pd=False).ret_hist_comparison(df, show=False)
 
         """
         # Get the returns for the current object and the benchmark
         ret = self.data['close']
         #bench_data = yf.download(benchmark, self.start_date)['Close']
-        bench = Finance_Tools(other_returns).returns(return_pd=True)
+        bench = Finance_Tools(comp_price_series).returns(return_pd=True)
         benchmark = other_name
 
         # Compute mean and standard deviation for both datasets
@@ -792,7 +792,8 @@ Value counts per year
             x=bench,
             name=benchmark,
             opacity=0.5,
-            xbins=dict(size=bin_size)
+            xbins=dict(size=bin_size),
+            marker={'color':'#03cafc'}
         ))
 
         # Add histogram for the current object's returns
@@ -800,7 +801,8 @@ Value counts per year
             x=ret,
             name=self.name,
             opacity=0.5,
-            xbins=dict(size=bin_size)
+            xbins=dict(size=bin_size),
+            marker={'color':'#ff6b6b'}
         ))
 
         # Manually compute the histograms to get y_max for plotting vertical lines
@@ -940,7 +942,7 @@ Value counts per year
         Graphs the return distribution of the current object and a benchmark,
         including mean and standard deviation lines, as well as normal distribution curves.
 
-        Expects returns as Finance_Tools objects.
+        Expects a Finance_Tools object with prices not returns.
 
         Args:
             show (bool): Whether to display the plot. Default is True.
@@ -951,20 +953,19 @@ Value counts per year
             plotly.graph_objects.Figure: The generated plot.
 
         Example:
-            finance_tool.ret_hist_benchmark(show=True, bin_size=0.001, benchmark='^SPX')
+            finance_tool.ret_hist_benchmark(show=False, benchmark='^SPX')
         """
 
         # Get the benchmark
         bench_data = yf.download(benchmark, self.start_date)['Close']
         #bench = Finance_Tools(bench_data).returns(return_pd=True)
         #Applyt the ret hist function with SPX
-        fig = self.returns(return_pd=False).ret_hist_comparison(bench_data, benchmark, show=False, bin_size=bin_size)
+        fig = self.returns(return_pd=False).ret_hist_comparison(bench_data, benchmark, show=False)
 
         if show:
             fig.show()
 
         return fig
-
 
     # Candlestick chart
     def candlestick(self, show=True, show_vol=False):
@@ -1246,7 +1247,7 @@ Value counts per year
             return Finance_Tools(cum_ret, self.name)
 
 
-    def cumulative_comparison(self, other_series, plot=False):
+    def cumulative_comparison(self, other_series, other_name, plot=False):
         """
         Calculates and compares the cumulative returns of the asset data and another time series.
 
@@ -1265,7 +1266,7 @@ Value counts per year
         other_series = Finance_Tools(other_series).cumulative_return()
 
         both = pd.concat([og, other_series], axis=1)
-        both.columns = [self.name, 'other']
+        both.columns = [self.name, other_name]
 
         if plot:
             fig = both.plot()
