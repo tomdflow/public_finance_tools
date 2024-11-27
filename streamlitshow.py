@@ -64,6 +64,10 @@ with col3:
    st.plotly_chart(weekday_fig)
    st.write(weekday_df)
 
+   st.write('Significance of diffferent months')
+   seas_months = ft.month_returns()
+   st.write(seas_months)
+
    st.write('High low range')
    st.plotly_chart(ft.high_low_range().plot())
 

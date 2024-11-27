@@ -575,7 +575,7 @@ Value counts per year
 
         return intra_sig, overnight_sig, weekend_sig
 
-    # Returns
+    # Weekday Seasonality
     def weekday_returns(self, alpha=0.05):
         """
         Calculates and analyzes the returns of a financial asset by weekday.
@@ -640,15 +640,44 @@ Value counts per year
 
             # Perform one-sample t-test comparing the mean return of the weekday to the overall mean
             weekday_stats['t_stat'][day], weekday_stats['p_value'][day] = stats.ttest_1samp(weekday_returns, overall_mean)
-            
-            # Spell out results
-            if weekday_stats['p_value'][day] < alpha:
-                print(f"{day}: Mean return is significantly different from the overall mean (p-value = {weekday_stats['p_value'][day]:.4f})")
-            else:
-                pass
-                #print(f"{day}: No significant difference in mean return compared to the overall mean (p-value = {weekday_stats['p_value'][day]:.4f})")
+
 
         return fig, pd.DataFrame(weekday_stats).sort_values(by='p_value')
+
+    # Month Seasonality
+    def month_returns(self, alpha=0.05):
+        ret = self.increase_frequency('ME', return_pd=False).returns()
+        ret = pd.DataFrame(ret)
+        ret['Month'] = ret.index.month_name()
+
+        #   Test weekday returns for significance
+        months = ret['Month'].unique() # Get list of weekdays
+
+        # variable to store results
+        months_stats = {'p_value':dict(),
+                        't_stat':dict(),
+                        'mean_return':dict(),
+                        'st_dev':dict(),
+                        'mean_diff':dict(),
+                        'st_dev_diff':dict(),
+                        }
+
+        overall_mean = ret['close'].mean()
+        overall_std = ret['close'].std()
+
+        for day in months:
+            months_returns = ret[ret['Month'] == day]['close']
+            
+            months_stats['mean_return'][day] = months_returns.mean()
+            months_stats['st_dev'][day] = months_returns.std()
+            months_stats['mean_diff'][day] = months_returns.mean() - overall_mean
+            months_stats['st_dev_diff'][day] = months_returns.std() - overall_std
+
+            # Perform one-sample t-test comparing the mean return of the weekday to the overall mean
+            months_stats['t_stat'][day], months_stats['p_value'][day] = stats.ttest_1samp(months_returns, overall_mean)
+
+
+        return pd.DataFrame(months_stats).sort_values(by='p_value')
 
     # Graphing
     def ret_hist(self, bin_size=0.001, show=True):
