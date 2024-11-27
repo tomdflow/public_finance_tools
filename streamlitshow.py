@@ -60,7 +60,9 @@ with col3:
    st.plotly_chart(ft.simple_weekend_returns(return_pd=False).ret_hist(show=False))
 
    st.write('Significance of different weekday returns vs the overall returns')
-   st.write(ft.weekday_returns())
+   weekday_fig, weekday_df = ft.weekday_returns()
+   st.plotly_chart(weekday_fig)
+   st.write(weekday_df)
 
    st.write('High low range')
    st.plotly_chart(ft.high_low_range().plot())

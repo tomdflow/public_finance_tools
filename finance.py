@@ -576,7 +576,7 @@ Value counts per year
         return intra_sig, overnight_sig, weekend_sig
 
     # Returns
-    def weekday_returns(self, hist_comp=False, alpha=0.05):
+    def weekday_returns(self, alpha=0.05):
         """
         Calculates and analyzes the returns of a financial asset by weekday.
         
@@ -612,9 +612,7 @@ Value counts per year
         ret = pd.DataFrame(self.returns())
         ret['weekday'] = ret.index.day_name()
 
-        if hist_comp:
-            fig = px.histogram(ret['close'], color=ret['weekday'], opacity=0.6)
-            fig.show()
+        fig = px.histogram(ret['close'], color=ret['weekday'], opacity=0.6) # Chart displaying all weekend returns
 
 
         #   Test weekday returns for significance
@@ -650,7 +648,7 @@ Value counts per year
                 pass
                 #print(f"{day}: No significant difference in mean return compared to the overall mean (p-value = {weekday_stats['p_value'][day]:.4f})")
 
-        return pd.DataFrame(weekday_stats).sort_values(by='p_value')
+        return fig, pd.DataFrame(weekday_stats).sort_values(by='p_value')
 
     # Graphing
     def ret_hist(self, bin_size=0.001, show=True):
