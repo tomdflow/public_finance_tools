@@ -55,7 +55,7 @@ with col3:
 
 with col4:
    st.write('Comparison of return distribution with benchmark')
-   st.plotly_chart(ft.log_returns(return_pd=False).ret_hist_benchmark(show=False, benchmark='^SPX'))
+   st.plotly_chart(ft.returns(return_pd=False).ret_hist_benchmark(show=False, benchmark='^SPX'))
 
    st.write('Weekend Returns')
    #st.plotly_chart(lol.weekend_return()['weekend_return'].plot(kind='hist'))
@@ -63,6 +63,11 @@ with col4:
 
    st.write('Significance of different weekday returns vs the overall returns')
    st.write(ft.weekday_returns())
+
+   #st.write("Performance Comparison to other ticker")
+   #comp_asset = st.text_input(label="Stock", value='MSFT') # get the ticker from input
+   #bench_data = yf.download(comp_asset, start_time)['Close']
+   #ft.cumulative_comparison(bench_data, other_name=comp_asset).plot()
 
    st.write('High low range')
    st.plotly_chart(ft.high_low_range().plot())
