@@ -1180,7 +1180,7 @@ Value counts per year
         else:
             return Finance_Tools(df, self.name)
         
-
+    # Historical Analytics
     def volatility(self, window=252, return_pd=True):
         """
         Calculates the volatility of the asset data using a rolling window.
@@ -1199,7 +1199,7 @@ Value counts per year
         else:
             return Finance_Tools(vol, self.name)
 
-
+    # Historical Analytics
     def correlation(self, other_series, window=252, convert_to_returns=False, return_pd=True):
         """
         Calculates the correlation between the asset data and another time series, using a rolling window.
