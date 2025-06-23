@@ -178,9 +178,12 @@ class Finance_Tools: #pd.DataFrame
                 
         index_is_dt = False # Bool to signify that the data is a series of df and has a datetime index
 
-        # Even if just series is put in convert to df so can standardize on a df
-        if isinstance(data, pd.Series):
+        
+        if isinstance(data, pd.Series):  # Even if just series is put in convert to df so can standardize on a df
             data = pd.DataFrame(data)
+
+        if isinstance(data.columns, pd.MultiIndex):  # Remove second multi-index level since yahoo finance update
+            data = data.droplevel(level=1, axis=1) 
 
         # Check if index is valid datetime and if not try to pares or error
         if isinstance(data, pd.DataFrame):
@@ -200,9 +203,7 @@ class Finance_Tools: #pd.DataFrame
         # If the input is valid (i.e. Series or df with datetime index) check if its just closes or OHLC data
         # This sets the datatype variable for later use in methods to decide if it should be availabale or not
         if index_is_dt:
-            # change col names to lower case
-            data.columns = data.columns.str.lower()
-
+            data.columns = data.columns.str.lower()  # change col names to lower case
             ohlc_req_cols = ["open", "high", "low", "close"] # , "volume"             
 
             if all(col in data.columns for col in ohlc_req_cols): # check if its an OHLC df
@@ -985,6 +986,9 @@ Value counts per year
 
         # Get the benchmark
         bench_data = yf.download(benchmark, self.start_date)['Close']
+
+        if isinstance(bench_data.columns, pd.MultiIndex):  # Remove second multi-index level since yahoo finance update
+            bench_data = bench_data.droplevel(level=1, axis=1) 
         #bench = Finance_Tools(bench_data).returns(return_pd=True)
         #Applyt the ret hist function with SPX
         fig = self.returns(return_pd=False).ret_hist_comparison(bench_data, benchmark, show=False)
