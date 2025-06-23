@@ -26,6 +26,7 @@ with col2:
    start_time = st.date_input(label='Start date', value=pd.to_datetime('2010-01-01'))
 
 data = yf.download(asset, start_time)#['Close'] , interval='1h'
+data = data.droplevel(level=1, axis=1)  # Remove second multi-index level since yahoo finance update
 #data.columns = data.columns.str.lower()
 ft = Finance_Tools(data, asset)
 
