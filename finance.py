@@ -202,39 +202,36 @@ class Finance_Tools: #pd.DataFrame
 
         # If the input is valid (i.e. Series or df with datetime index) check if its just closes or OHLC data
         # This sets the datatype variable for later use in methods to decide if it should be availabale or not
-        if index_is_dt:
-            data.columns = data.columns.str.lower()  # change col names to lower case
-            ohlc_req_cols = ["open", "high", "low", "close"] # , "volume"             
+        data.columns = data.columns.str.lower()  # change col names to lower case
+        ohlc_req_cols = ["open", "high", "low", "close"] # , "volume"             
 
-            if all(col in data.columns for col in ohlc_req_cols): # check if its an OHLC df
-                self.data_type = "OHLC"
-                self.main_cols = ohlc_req_cols
+        if all(col in data.columns for col in ohlc_req_cols): # check if its an OHLC df
+            self.data_type = "OHLC"
+            self.main_cols = ohlc_req_cols
 
-            elif "close" in data.columns:  # Check if at least close is present
-                self.data_type = "close"
-                self.main_cols = "close"
+        elif "close" in data.columns:  # Check if at least close is present
+            self.data_type = "close"
+            self.main_cols = "close"
 
-            else:
-                raise ValueError(f"Invalid Input: Must contain either columns {ohlc_req_cols} or at least 'close'")
+        else:
+            raise ValueError(f"Invalid Input: Must contain either columns {ohlc_req_cols} or at least 'close'")
 
 
-        # Data is valid, create all the attributes here
-        if index_is_dt:
-            data = self.data[self.main_cols] # localize data with only the main cols
-            self.name = name
+        data = self.data[self.main_cols] # localize data with only the main cols
+        self.name = name
 
-            # Show the date range of the data
-            self.start_date = data.index.min()
-            self.stop_date = data.index.max()
+        # Show the date range of the data
+        self.start_date = data.index.min()
+        self.stop_date = data.index.max()
 
-            self.frequency, self.freq_int = self._help_get_frequency(data) # Gets the data frequency as D, W, ...
+        self.frequency, self.freq_int = self._help_get_frequency(data) # Gets the data frequency as D, W, ...
 
-            self.get_nas = data[data.isna()] # Gets a list of all the missing values in the data
-            self.get_zeros = data[data==0] # Gets a list of all the zeros in the data
+        self.get_nas = data[data.isna()] # Gets a list of all the missing values in the data
+        self.get_zeros = data[data==0] # Gets a list of all the zeros in the data
 
-            self.weekday_value_counts = self.data.index.day_name().value_counts(sort=False)
-            self.month_value_counts = self.data.index.month_name().value_counts(sort=False)
-            self.year_value_counts = self.data.index.year.value_counts(sort=False)
+        self.weekday_value_counts = self.data.index.day_name().value_counts(sort=False)
+        self.month_value_counts = self.data.index.month_name().value_counts(sort=False)
+        self.year_value_counts = self.data.index.year.value_counts(sort=False)
 
         
     def __repr__(self):
