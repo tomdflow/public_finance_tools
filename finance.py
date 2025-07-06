@@ -178,12 +178,11 @@ class Finance_Tools: #pd.DataFrame
                 
         index_is_dt = False # Bool to signify that the data is a series of df and has a datetime index
 
+        if isinstance(data.columns, pd.MultiIndex):  # Remove second multi-index level since yahoo finance update
+            data = data.droplevel(level=1, axis=1) 
         
         if isinstance(data, pd.Series):  # Even if just series is put in convert to df so can standardize on a df
             data = pd.DataFrame(data)
-
-        if isinstance(data.columns, pd.MultiIndex):  # Remove second multi-index level since yahoo finance update
-            data = data.droplevel(level=1, axis=1) 
 
         # Check if index is valid datetime and if not try to pares or error
         if isinstance(data, pd.DataFrame):
