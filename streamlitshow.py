@@ -1,6 +1,7 @@
 # Secondary packages
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 # Data packages
 import yfinance as yf
@@ -25,7 +26,9 @@ with col1:
 with col2:
    start_time = st.date_input(label='Start date', value=pd.to_datetime('2010-01-01'))
 
-data = yf.download(asset, start_time)#['Close'] , interval='1h'
+data = yf.download(tickers=asset, 
+                   start=start_time, end=datetime.now(),
+                   multi_level_index=False)#['Close'] , interval='1h'
  
 st.dataframe(data)  # Display the data in a table
 
